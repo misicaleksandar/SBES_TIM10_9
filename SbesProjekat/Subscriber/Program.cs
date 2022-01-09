@@ -34,8 +34,20 @@ namespace Subscriber
             host.Description.Behaviors.Remove<ServiceSecurityAuditBehavior>();
             host.Description.Behaviors.Add(newAudit);
 
-
             host.Open();
+
+
+            string srvCertCN = "PubSubEngine";
+
+            NetTcpBinding bindingg = new NetTcpBinding();
+            bindingg.Security.Transport.ClientCredentialType = TcpClientCredentialType.Certificate;
+
+            /// Use CertManager class to obtain the certificate based on the "srvCertCN" representing the expected service identity.
+            X509Certificate2 srvCert = CertManager.GetCertificateFromStorage(StoreName.TrustedPeople, StoreLocation.LocalMachine, srvCertCN);
+            EndpointAddress addresss = new EndpointAddress(new Uri("net.tcp://localhost:9999/Engine"),
+                                      new X509CertificateEndpointIdentity(srvCert));
+
+            ClientProxy proxy = new ClientProxy(bindingg, addresss);
 
             while (true)
             {
@@ -50,7 +62,11 @@ namespace Subscriber
                     do
                     {
                         Console.WriteLine("Unesite tip alarma:\n 1. NO_ALARM\n 2. FALSE_ALARM\n 3. INFO\n 4. WARNING\n 5. ERROR\n");
-                        alarmType = Int32.Parse(Console.ReadLine());
+                        if(!Int32.TryParse(Console.ReadLine(), out alarmType))
+                        {
+                            Console.WriteLine("Pogresan unos.");
+                            continue;
+                        }
 
                         if (alarmType == 0) break;
 
@@ -71,19 +87,6 @@ namespace Subscriber
 
                     } while (true);
                         
-                        
-                    
-                    string srvCertCN = "PubSubEngine";
-
-                    NetTcpBinding bindingg = new NetTcpBinding();
-                    bindingg.Security.Transport.ClientCredentialType = TcpClientCredentialType.Certificate;
-
-                    /// Use CertManager class to obtain the certificate based on the "srvCertCN" representing the expected service identity.
-                    X509Certificate2 srvCert = CertManager.GetCertificateFromStorage(StoreName.TrustedPeople, StoreLocation.LocalMachine, srvCertCN);
-                    EndpointAddress addresss = new EndpointAddress(new Uri("net.tcp://localhost:9999/Engine"),
-                                              new X509CertificateEndpointIdentity(srvCert));
-
-                    ClientProxy proxy = new ClientProxy(bindingg, addresss);
 
 
                     string alarmTypess = "";
@@ -103,11 +106,11 @@ namespace Subscriber
 
                     
 
-                    Console.WriteLine("Pritisnite x za odjavljivanje:");
+                    Console.WriteLine("Pritisnite x za gasenje:");
 
                     if (Console.ReadLine() == "x")
                     {
-                        proxy.Unsubscribe(address);
+                        break;
                     }
 
                     
@@ -119,6 +122,8 @@ namespace Subscriber
                 }
                 
             }
+
+            proxy.Unsubscribe(address);
 
         }
     }

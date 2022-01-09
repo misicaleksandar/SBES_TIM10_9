@@ -23,10 +23,16 @@ namespace Manager
 			X509Certificate2 srvCert = CertManager.GetCertificateFromStorage(StoreName.My, StoreLocation.LocalMachine,
 				Formatter.ParseName(WindowsIdentity.GetCurrent().Name));
 
-			if (!certificate.Issuer.Equals(srvCert.Issuer))
+			if (!certificate.Issuer.Equals(srvCert.SubjectName.Name))
 			{
 				throw new Exception("Klijentski sertifikat nije izdat od PubSubEnginea.");
 			}
+
+			if(Convert.ToDateTime(certificate.GetExpirationDateString()) < DateTime.Now)
+            {
+				throw new Exception("Klijentski sertifikat je istekao.");
+			}
+
 		}
 	}
 }
